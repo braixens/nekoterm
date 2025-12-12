@@ -123,7 +123,7 @@ impl Widget for &App {
 
         let msg = if player.hand_value() > dealer.hand_value() && dealer.hand().len() >= 2 || player.has_blackjack(){
             format!("{} \n\n {} \n\n\n\n YOU WIN!!", hand_text, dealer_text)
-        } else if self.game.players()[0].is_busted() || dealer.is_busted() || (dealer.hand().len() >= 2 && dealer.hand_value() >= player.hand_value() && !dealer.is_busted()) {
+        } else if self.game.players()[0].is_busted() || (dealer.hand().len() >= 2 && dealer.hand_value() >= player.hand_value() && !dealer.is_busted()) {
             format!("{} \n\n {} \n\n\n\n YOU LOSE!!!", hand_text, dealer_text)
         } else {
             format!("{} \n\n {}", hand_text, dealer_text)
