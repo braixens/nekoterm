@@ -121,11 +121,13 @@ impl Widget for &App {
                                Line::from(vec!["Value ".into(), self.game.dealer().hand_value().to_string().yellow()])];
         let dealer_text = Text::from(dealer_info);
 
-        let msg = if player.hand_value() > dealer.hand_value() && dealer.hand().len() >= 2 || player.has_blackjack() || dealer.is_busted() {
+        let msg = if player.hand_value() > dealer.hand_value() && dealer.hand().len() >= 2 || player.hand_value() == 21 && dealer.hand_value() < 21 && !player.has_blackjack() || dealer.is_busted() {
             format!("{} \n\n {} \n\n\n\n YOU WIN!!", hand_text, dealer_text)
         } else if player.is_busted() || (dealer.hand().len() >= 2 && dealer.hand_value() >= player.hand_value() && !dealer.is_busted()) {
             format!("{} \n\n {} \n\n\n\n YOU LOSE!!!", hand_text, dealer_text)
-        } else {
+        } else if player.has_blackjack() {
+    format!("{} \n\n {} \n\n\n\n BLACKJACK!!!!!!", hand_text, dealer_text)
+    } else {
             format!("{} \n\n {}", hand_text, dealer_text)
         };
         Paragraph::new(msg)

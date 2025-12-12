@@ -260,7 +260,7 @@ impl Game {
         if !self.game_over {
             self.players[player_index].draw_card(&mut self.deck);
             self.players[player_index].hand_value = self.players[player_index].calculate_hand();
-            if self.players[player_index].is_busted() {
+            if self.players[player_index].is_busted() || self.players[player_index].hand_value == 21 {
                 self.game_over = true;
             }
         }
