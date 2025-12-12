@@ -1,5 +1,4 @@
-
-
+#![allow(unused)]
 mod blackjack;
 use crate::blackjack::{Game, Deck, Card};
 use std::time::Duration;
@@ -56,6 +55,9 @@ impl App {
             KeyCode::Char('q') => self.exit(),
             KeyCode::Char('h') => self.hit(),
             KeyCode::Char('s') => self.stand(),
+            KeyCode::Char('r') => if self.game.game_over() {
+                self.game = Game::default();
+            }
             _ => {}
         }
     }
@@ -68,22 +70,38 @@ impl App {
     }
 
     fn stand(&mut self) {
-        self.game.dealer_turn();
+        self.game.player_stand()
     }
 }
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let title = Line::from(" Blackjack ".bold());
-        let instructions = Line::from(vec![
-            " | Hit ".into(),
-            " <H> ".blue().bold(),
-            "| Stand ".into(),
-            " <S> ".blue().bold(),
-            "| Quit ".into(),
-            "<Q> ".blue().bold(),
-            "| ".into(),
-        ]);
+        let instructions: Line = if self.game.game_over() {
+            Line::from(vec![
+                " | Hit ".into(),
+                " <H> ".blue().bold(),
+                "| Stand ".into(),
+                " <S> ".blue().bold(),
+                "| Quit ".into(),
+                "<Q> ".blue().bold(),
+                "| ".into(),
+                "Restart ".into(),
+                "<R>".blue().bold(),
+                " | ".into(),
+            ])
+        } else {
+            Line::from(vec![
+                " | Hit ".into(),
+                " <H> ".blue().bold(),
+                "| Stand ".into(),
+                " <S> ".blue().bold(),
+                "| Quit ".into(),
+                "<Q> ".blue().bold(),
+                "| ".into(),
+            ])
+        };
+
 
         let block = Block::bordered()
             .title(title.centered())
@@ -91,38 +109,28 @@ impl Widget for &App {
             .border_set(border::THICK);
 
         let dealer = self.game.dealer();
-
-        let player = match self.game.players().get(0) {
-            Some(player) => player,
-            None => {
-                return;
-            }
-        };
-
+        let player = &self.game.players()[0];
         let card_strings: Vec<String> = player.hand().iter().map(|card| format!("{}{}", card.card_type(), card.suit())).collect();
         let cards_display = card_strings.join(", ");
-        let hand_info = vec![Line::from(vec!["Hand ".into(), cards_display.into()]),
+        let hand_info = vec![Line::from(vec!["Hand: ".into(), cards_display.into()]),
                              Line::from(vec!["Value ".into(), self.game.players()[0].hand_value().to_string().yellow()])];
         let hand_text = Text::from(hand_info);
         let dealer_cards: Vec<String> = dealer.hand().iter().map(|card| format!("{}{}", card.card_type(), card.suit())).collect();
         let dealer_display = dealer_cards.join(", ");
-        let dealer_info = vec![Line::from(vec!["Dealer ".into(), dealer_display.into()]),
+        let dealer_info = vec![Line::from(vec!["Dealer: ".into(), dealer_display.into()]),
                                Line::from(vec!["Value ".into(), self.game.dealer().hand_value().to_string().yellow()])];
         let dealer_text = Text::from(dealer_info);
 
-        match self.game.players()[0].is_busted() {
-            false => {
-                Paragraph::new(format!("{} \n {}", hand_text, dealer_text))
-                    .centered()
-                    .block(block)
-                    .render(area, buf);
-            },
-            true => {
-                Paragraph::new("YOU LOSE")
-                    .centered()
-                    .block(block)
-                    .render(area, buf);
-            }
-        }
+        let msg = if player.hand_value() > dealer.hand_value() && dealer.hand().len() >= 2 || player.has_blackjack(){
+            format!("{} \n\n {} \n\n\n\n YOU WIN!!", hand_text, dealer_text)
+        } else if self.game.players()[0].is_busted() || dealer.is_busted() || (dealer.hand().len() >= 2 && dealer.hand_value() >= player.hand_value() && !dealer.is_busted()) {
+            format!("{} \n\n {} \n\n\n\n YOU LOSE!!!", hand_text, dealer_text)
+        } else {
+            format!("{} \n\n {}", hand_text, dealer_text)
+        };
+        Paragraph::new(msg)
+            .centered()
+            .block(block.clone())
+            .render(area, buf);
     }
 }

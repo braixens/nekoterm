@@ -1,3 +1,4 @@
+#![allow(unused)]
 use rand::Rng;
 use std::fmt;
 use std::thread;
@@ -12,10 +13,10 @@ pub enum Suit {
 impl fmt::Display for Suit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let suit = match self {
-            Suit::Clubs => "♣",
-            Suit::Diamonds => "♦",
-            Suit::Hearts => "♥",
-            Suit::Spades => "♠",
+            Suit::Clubs => "♣)",
+            Suit::Diamonds => "♦)",
+            Suit::Hearts => "♥)",
+            Suit::Spades => "♠)",
         };
         write!(f, "{}", suit)
     }
@@ -31,9 +32,9 @@ pub enum CardType{
 impl fmt::Display for CardType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            CardType::Numbered(number) => write!(f, "({})", number),
-            CardType::Face(face) => write!(f, "({})", face),
-            CardType::Ace => write!(f, "(A)"),
+            CardType::Numbered(number) => write!(f, "({}", number),
+            CardType::Face(face) => write!(f, "({}", face),
+            CardType::Ace => write!(f, "(A"),
 
         }
     }
@@ -48,9 +49,9 @@ pub enum Face {
 impl fmt::Display for Face {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let face = match self {
-            Face::King => "King",
-            Face::Queen => "Queen",
-            Face::Jack => "Jack",
+            Face::King => "K",
+            Face::Queen => "Q",
+            Face::Jack => "J",
         };
         write!(f, "{}", face)
     }
@@ -155,6 +156,9 @@ impl Player {
         if let Some(card) = deck.draw(){
             self.hand.push(card);
             self.calculate_hand();
+            if self.is_busted() {
+
+            }
         }
     }
 
@@ -201,7 +205,8 @@ impl Player {
 pub struct Game {
     dealer: Player,
     players: Vec<Player>,
-    deck: Deck
+    deck: Deck,
+    game_over: bool,
 }
 
 impl Game {
@@ -212,18 +217,29 @@ impl Game {
             dealer: Player::new("Dealer".to_string()),
             players: Vec::new(),
             deck,
+            game_over: false,
         }
     }
     pub fn single_player(name: String) -> Self {
         let mut deck = Deck::new();
         deck.shuffle();
-        Self {
+        let mut game = Self {
             dealer: Player::new("Dealer".to_string()),
             players: vec![
                 Player::new(name),
             ],
             deck,
+            game_over: false,
+        };
+        game.dealer.draw_card(&mut game.deck);
+        for player in &mut game.players {
+            player.draw_card(&mut game.deck);
+            player.draw_card(&mut game.deck);
+            if player.has_blackjack() {
+                game.game_over = true;
+            }
         }
+        return game
     }
 
     pub fn add_player(&mut self, name: String){
@@ -241,17 +257,31 @@ impl Game {
     }
 
     pub fn player_draw_card(&mut self, player_index: usize) {
-        self.players[player_index].draw_card(&mut self.deck);
-        self.players[player_index].hand_value = self.players[player_index].calculate_hand();
-    }
-
-    pub fn dealer_turn(&mut self) {
-        while self.dealer.hand_value < 17 && !self.dealer.has_blackjack() {
-            self.dealer.draw_card(&mut self.deck);
-            self.dealer.calculate_hand();
+        if !self.game_over {
+            self.players[player_index].draw_card(&mut self.deck);
+            self.players[player_index].hand_value = self.players[player_index].calculate_hand();
+            if self.players[player_index].is_busted() {
+                self.game_over = true;
+            }
         }
     }
 
+
+
+    pub fn dealer_turn(&mut self) {
+        while self.dealer.hand_value < 17 && !self.dealer.has_blackjack() && !self.game_over {
+            self.dealer.draw_card(&mut self.deck);
+            self.dealer.calculate_hand();
+            if self.dealer.has_blackjack() || self.dealer.is_busted() {
+                self.game_over = true;
+            }
+        }
+    }
+
+    pub fn player_stand(&mut self) {
+        self.dealer_turn();
+        self.game_over = true;
+    }
     pub fn players(&self) -> &Vec<Player> {
         &self.players
     }
@@ -260,11 +290,19 @@ impl Game {
         &self.deck
     }
 
+    pub fn game_over(&self) -> bool {
+        self.game_over
+    }
     pub fn dealer(&self) -> &Player {
         &self.dealer
     }
     pub fn player_turn () {
         todo!()
+    }
+
+
+    pub fn finish(&mut self) {
+        self.game_over = true;
     }
 }
 impl Default for Game {
